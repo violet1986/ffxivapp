@@ -1,5 +1,5 @@
 ﻿// FFXIVAPP.Client
-// PluginStatus.cs
+// TCPTable.cs
 // 
 // Copyright © 2007 - 2015 Ryan Wilson - All Rights Reserved
 // 
@@ -27,13 +27,53 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
-namespace FFXIVAPP.Client.Models
+using System.Collections;
+using System.Collections.Generic;
+
+namespace FFXIVAPP.Client.Network
 {
-    public enum PluginStatus
+    public class TCPTable : IEnumerable
     {
-        NotInstalled,
-        Installed,
-        UpdateAvailable,
-        OutOfDate
+        #region Private Fields
+
+        private IEnumerable<TCPRow> rows;
+
+        #endregion
+
+        #region Constructors
+
+        public TCPTable(IEnumerable<TCPRow> rows)
+        {
+            this.rows = rows;
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        public IEnumerable<TCPRow> Rows
+        {
+            get { return rows; }
+        }
+
+        #endregion
+
+        #region IEnumerable<TCPRow> Members
+
+        public IEnumerator<TCPRow> GetEnumerator()
+        {
+            return rows.GetEnumerator();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return rows.GetEnumerator();
+        }
+
+        #endregion
     }
 }

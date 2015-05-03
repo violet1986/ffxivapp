@@ -36,7 +36,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Threading;
 using System.Xml;
 using System.Xml.Linq;
@@ -57,6 +59,7 @@ namespace FFXIVAPP.Client
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static List<DirectSoundDeviceInfo> _availableAudioDevices;
+        private static IEnumerable<NetworkInterface> _availableNetworkInterfaces;
 
         #endregion
 
@@ -70,6 +73,11 @@ namespace FFXIVAPP.Client
         internal static IEnumerable<DirectSoundDeviceInfo> AvailableAudioDevices
         {
             get { return _availableAudioDevices ?? (_availableAudioDevices = new List<DirectSoundDeviceInfo>(DirectSoundOut.Devices.Where(d => d.Guid != Guid.Empty))); }
+        }
+
+        internal static IEnumerable<NetworkInterface> AvailableNetworkInterfaces
+        {
+            get { return _availableNetworkInterfaces ?? (_availableNetworkInterfaces = NetworkInterface.GetAllNetworkInterfaces()); }
         }
 
         public static string[] MArgs { get; private set; }
@@ -139,17 +147,28 @@ namespace FFXIVAPP.Client
         /// </summary>
         private static void ConfigureNLog()
         {
-            if (File.Exists("./FFXIVAPP.Client.exe.nlog"))
+            var hasLocal = false;
+            const string fileName = "./FFXIVAPP.Client.exe.nlog";
+            if (File.Exists(fileName))
             {
-                return;
+                hasLocal = true;
             }
             var resource = ResourceHelper.StreamResource(Common.Constants.AppPack + "Resources/FFXIVAPP.Client.exe.nlog");
             if (resource == null)
             {
                 return;
             }
-            var stringReader = new StringReader(XElement.Load(resource.Stream)
-                                                        .ToString());
+            StringReader stringReader;
+            if (hasLocal)
+            {
+                stringReader = new StringReader(XElement.Load(fileName)
+                                                       .ToString());
+            }
+            else
+            {
+                stringReader = new StringReader(XElement.Load(resource.Stream)
+                                                       .ToString());
+            }
             using (var xmlReader = XmlReader.Create(stringReader))
             {
                 LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
@@ -192,12 +211,6 @@ namespace FFXIVAPP.Client
                     case "CharacterName":
                         Constants.CharacterName = Settings.Default.CharacterName;
                         break;
-                    case "FirstName":
-                        Initializer.SetCharacter();
-                        break;
-                    case "LastName":
-                        Initializer.SetCharacter();
-                        break;
                     case "GameLanguage":
                         Constants.GameLanguage = Settings.Default.GameLanguage;
                         var lang = Settings.Default.GameLanguage.ToLower();
@@ -225,6 +238,17 @@ namespace FFXIVAPP.Client
                         break;
                     case "EnableNLog":
                         Common.Constants.EnableNLog = Constants.EnableNLog = Settings.Default.EnableNLog;
+                        break;
+                    case "EnableNetworkReading":
+                        Common.Constants.EnableNetworkReading = Constants.EnableNetworkReading = Settings.Default.EnableNetworkReading;
+                        if (Settings.Default.EnableNetworkReading)
+                        {
+                            Initializer.StartNetworkWorker();
+                        }
+                        else
+                        {
+                            Initializer.StopNetworkWorker();
+                        }
                         break;
                     case "EnableHelpLabels":
                         Constants.EnableHelpLabels = Settings.Default.EnableHelpLabels;

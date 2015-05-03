@@ -1,5 +1,5 @@
 ﻿// FFXIVAPP.Client
-// PluginStatus.cs
+// XIVConnection.cs
 // 
 // Copyright © 2007 - 2015 Ryan Wilson - All Rights Reserved
 // 
@@ -27,13 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
-namespace FFXIVAPP.Client.Models
+using System;
+using System.Net;
+
+namespace FFXIVAPP.Client.Network
 {
-    public enum PluginStatus
+    public class ServerConnection
     {
-        NotInstalled,
-        Installed,
-        UpdateAvailable,
-        OutOfDate
+        public uint DestinationAddress;
+        public ushort DestinationPort;
+        public uint SourceAddress;
+        public ushort SourcePort;
+        public DateTime TimeStamp;
+
+        public override bool Equals(object obj)
+        {
+            var connection = obj as ServerConnection;
+            if (connection == null)
+            {
+                return false;
+            }
+            return ((SourceAddress == connection.SourceAddress) && (DestinationAddress == connection.DestinationAddress));
+        }
+
+        public override int GetHashCode()
+        {
+            return (int) (((SourceAddress ^ DestinationAddress) ^ SourcePort) ^ DestinationPort);
+        }
+
+        public override string ToString()
+        {
+            return (new IPEndPoint(SourceAddress, (ushort) IPAddress.NetworkToHostOrder((short) SourcePort)) + " -> " + new IPEndPoint(DestinationAddress, (ushort) IPAddress.NetworkToHostOrder((short) DestinationPort)));
+        }
     }
 }

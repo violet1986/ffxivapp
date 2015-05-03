@@ -63,6 +63,7 @@ namespace FFXIVAPP.Client.ViewModels
 
         private static SettingsViewModel _instance;
         private List<string> _availableAudioDevicesList;
+        private List<string> _availableNetworkInterfacesList;
         private List<string> _homePluginList;
 
         public static SettingsViewModel Instance
@@ -108,6 +109,23 @@ namespace FFXIVAPP.Client.ViewModels
             }
         }
 
+        public List<string> AvailableNetworkInterfacesList
+        {
+            get
+            {
+                return _availableNetworkInterfacesList ?? (_availableNetworkInterfacesList = new List<string>());
+            }
+            set
+            {
+                if (_availableNetworkInterfacesList == null)
+                {
+                    _availableNetworkInterfacesList = new List<string>();
+                }
+                _availableNetworkInterfacesList = value;
+                RaisePropertyChanged();
+            }
+        }
+
         #endregion
 
         #region Declarations
@@ -115,13 +133,13 @@ namespace FFXIVAPP.Client.ViewModels
         private static string _key = "";
         private static string _value = "";
 
+        public ICommand RefreshNetworkWorkerCommand { get; private set; }
         public ICommand SetProcessCommand { get; private set; }
         public ICommand RefreshListCommand { get; private set; }
         public ICommand ChangeThemeCommand { get; private set; }
         public ICommand DefaultSettingsCommand { get; private set; }
         public ICommand ChangeAudioModeCommand { get; private set; }
         public ICommand GetCICUIDCommand { get; private set; }
-        public ICommand SaveCharacterCommand { get; private set; }
         public ICommand ColorSelectionCommand { get; private set; }
         public ICommand UpdateColorCommand { get; private set; }
 
@@ -129,13 +147,13 @@ namespace FFXIVAPP.Client.ViewModels
 
         public SettingsViewModel()
         {
+            RefreshNetworkWorkerCommand = new DelegateCommand(RefreshNetworkWorker);
             SetProcessCommand = new DelegateCommand(SetProcess);
             RefreshListCommand = new DelegateCommand(RefreshList);
             ChangeThemeCommand = new DelegateCommand(ChangeTheme);
             DefaultSettingsCommand = new DelegateCommand(DefaultSettings);
             ChangeAudioModeCommand = new DelegateCommand(ChangeAudioMode);
             GetCICUIDCommand = new DelegateCommand(GetCICUID);
-            SaveCharacterCommand = new DelegateCommand(SaveCharacter);
             ColorSelectionCommand = new DelegateCommand(ColorSelection);
             UpdateColorCommand = new DelegateCommand(UpdateColor);
         }
@@ -149,6 +167,13 @@ namespace FFXIVAPP.Client.ViewModels
         #endregion
 
         #region Command Bindings
+
+        /// <summary>
+        /// </summary>
+        private static void RefreshNetworkWorker()
+        {
+            Initializer.RefreshNetworkWorker();
+        }
 
         /// <summary>
         /// </summary>
@@ -193,7 +218,6 @@ namespace FFXIVAPP.Client.ViewModels
         /// </summary>
         private static void GetCICUID()
         {
-            SaveCharacter();
             var characterName = Settings.Default.CharacterName;
             var serverName = Settings.Default.ServerName;
             if (characterName.Replace(" ", "")
@@ -253,13 +277,6 @@ namespace FFXIVAPP.Client.ViewModels
             }
             var result = function.EndInvoke(asyncResult);
             Settings.Default.CICUID = result;
-        }
-
-        /// <summary>
-        /// </summary>
-        private static void SaveCharacter()
-        {
-            Initializer.SetCharacter();
         }
 
         /// <summary>

@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FFXIVAPP.Client.Delegates;
 using FFXIVAPP.Client.Memory;
 using FFXIVAPP.Client.Properties;
@@ -75,21 +76,21 @@ namespace FFXIVAPP.Client.Helpers
                         entry.ClaimedByID = BitConverter.ToUInt32(source, 0x1A0);
                         targetID = BitConverter.ToUInt32(source, 0x1A8);
                         pcTargetID = BitConverter.ToUInt32(source, 0xAA8);
-                        entry.Job = (Actor.Job) source[0x17E0];
-                        entry.Level = source[0x17E1];
-                        entry.GrandCompany = source[0x17E3];
-                        entry.GrandCompanyRank = source[0x17E4];
-                        entry.Title = source[0x17E6];
-                        entry.HPCurrent = BitConverter.ToInt32(source, 0x17E8);
-                        entry.HPMax = BitConverter.ToInt32(source, 0x17EC);
-                        entry.MPCurrent = BitConverter.ToInt32(source, 0x17F0);
-                        entry.MPMax = BitConverter.ToInt32(source, 0x17F4);
-                        entry.TPCurrent = BitConverter.ToInt16(source, 0x17F8);
+                        entry.Job = (Actor.Job) source[0x17C0];
+                        entry.Level = source[0x17C1];
+                        entry.GrandCompany = source[0x17C3];
+                        entry.GrandCompanyRank = source[0x17C4];
+                        entry.Title = source[0x17C6];
+                        entry.HPCurrent = BitConverter.ToInt32(source, 0x17C8);
+                        entry.HPMax = BitConverter.ToInt32(source, 0x17CC);
+                        entry.MPCurrent = BitConverter.ToInt32(source, 0x17D0);
+                        entry.MPMax = BitConverter.ToInt32(source, 0x17D4);
+                        entry.TPCurrent = BitConverter.ToInt16(source, 0x17D8);
                         entry.TPMax = 1000;
-                        entry.GPCurrent = BitConverter.ToInt16(source, 0x17FA);
-                        entry.GPMax = BitConverter.ToInt16(source, 0x17FC);
-                        entry.CPCurrent = BitConverter.ToInt16(source, 0x17FE);
-                        entry.CPMax = BitConverter.ToInt16(source, 0x1800);
+                        entry.GPCurrent = BitConverter.ToInt16(source, 0x17DA);
+                        entry.GPMax = BitConverter.ToInt16(source, 0x17DC);
+                        entry.CPCurrent = BitConverter.ToInt16(source, 0x17DE);
+                        entry.CPMax = BitConverter.ToInt16(source, 0x17E0);
                         entry.Race = source[0x2E58]; // ??
                         entry.Sex = (Actor.Sex) source[0x2E59]; //?
                         entry.IsCasting = BitConverter.ToBoolean(source, 0x32E0);
@@ -180,7 +181,7 @@ namespace FFXIVAPP.Client.Helpers
                         Buffer.BlockCopy(source, 0x3168, statusesSource, 0, limit * 12);
                         break;
                     default:
-                        Buffer.BlockCopy(source, 0x28B8, statusesSource, 0, limit * 12);
+                        Buffer.BlockCopy(source, 0x28BC, statusesSource, 0, limit * 12);
                         break;
                 }
                 for (var i = 0; i < limit; i++)
@@ -189,12 +190,26 @@ namespace FFXIVAPP.Client.Helpers
                     Buffer.BlockCopy(statusesSource, i * statusSize, statusSource, 0, statusSize);
                     var statusEntry = new StatusEntry
                     {
+                        TargetEntity = entry,
                         TargetName = entry.Name,
                         StatusID = BitConverter.ToInt16(statusSource, 0x0),
                         Stacks = statusSource[0x2],
                         Duration = BitConverter.ToSingle(statusSource, 0x4),
                         CasterID = BitConverter.ToUInt32(statusSource, 0x8)
                     };
+                    try
+                    {
+                        var pc = PCWorkerDelegate.GetUniqueNPCEntities()
+                                                 .FirstOrDefault(a => a.ID == statusEntry.CasterID);
+                        var npc = NPCWorkerDelegate.GetUniqueNPCEntities()
+                                                   .FirstOrDefault(a => a.NPCID2 == statusEntry.CasterID);
+                        var monster = MonsterWorkerDelegate.GetUniqueNPCEntities()
+                                                           .FirstOrDefault(a => a.ID == statusEntry.CasterID);
+                        statusEntry.SourceEntity = (pc ?? npc) ?? monster;
+                    }
+                    catch (Exception ex)
+                    {
+                    }
                     try
                     {
                         var statusInfo = StatusEffectHelper.StatusInfo(statusEntry.StatusID);

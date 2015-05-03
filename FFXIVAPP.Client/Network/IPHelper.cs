@@ -1,5 +1,5 @@
 ﻿// FFXIVAPP.Client
-// LocaleHelper.cs
+// IPHelper.cs
 // 
 // Copyright © 2007 - 2015 Ryan Wilson - All Rights Reserved
 // 
@@ -27,56 +27,49 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
-using System.Collections;
-using System.Globalization;
-using System.Linq;
-using System.Windows;
-using FFXIVAPP.Client.Localization;
-using FFXIVAPP.Client.Models;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
-namespace FFXIVAPP.Client.Helpers
+namespace FFXIVAPP.Client.Network
 {
-    internal static class LocaleHelper
+    public static class IPHelper
     {
-        /// <summary>
-        /// </summary>
-        /// <param name="cultureInfo"> </param>
-        public static void Update(CultureInfo cultureInfo)
+        #region Public Methods
+
+        public static TCPTable GetExtendedTCPTable(bool sorted)
         {
-            var culture = cultureInfo.TwoLetterISOLanguageName;
-            ResourceDictionary dictionary;
-            if (Constants.Supported.Contains(culture))
+            var tcpRows = new List<TCPRow>();
+            var tcpTable = IntPtr.Zero;
+            var tcpTableLength = 0;
+            if (UnsafeNativeMethods.GetExtendedTcpTable(tcpTable, ref tcpTableLength, sorted, 2, UnsafeNativeMethods.TCP_TABLE_CLASS.OWNER_PID_ALL) == 0)
             {
-                switch (culture)
+                return new TCPTable(tcpRows);
+            }
+            try
+            {
+                tcpTable = Marshal.AllocHGlobal(tcpTableLength);
+                if (UnsafeNativeMethods.GetExtendedTcpTable(tcpTable, ref tcpTableLength, true, 2, UnsafeNativeMethods.TCP_TABLE_CLASS.OWNER_PID_ALL) == 0)
                 {
-                    case "fr":
-                        dictionary = French.Context();
-                        break;
-                    case "ja":
-                        dictionary = Japanese.Context();
-                        break;
-                    case "de":
-                        dictionary = German.Context();
-                        break;
-                    case "zh":
-                        dictionary = Chinese.Context();
-                        break;
-                    default:
-                        dictionary = English.Context();
-                        break;
+                    var table = (UnsafeNativeMethods.TCPTable) Marshal.PtrToStructure(tcpTable, typeof (UnsafeNativeMethods.TCPTable));
+                    var rowPtr = (IntPtr) ((long) tcpTable + Marshal.SizeOf(table.Length));
+                    for (var i = 0; i < table.Length; ++i)
+                    {
+                        tcpRows.Add(new TCPRow((UnsafeNativeMethods.TCPRow) Marshal.PtrToStructure(rowPtr, typeof (UnsafeNativeMethods.TCPRow))));
+                        rowPtr = (IntPtr) ((long) rowPtr + Marshal.SizeOf(typeof (UnsafeNativeMethods.TCPRow)));
+                    }
                 }
             }
-            else
+            finally
             {
-                dictionary = English.Context();
+                if (tcpTable != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(tcpTable);
+                }
             }
-            var locale = dictionary.Cast<DictionaryEntry>()
-                                   .ToDictionary(item => (string) item.Key, item => (string) item.Value);
-            AppViewModel.Instance.Locale = locale;
-            foreach (var pluginInstance in App.Plugins.Loaded.Cast<PluginInstance>().Where(pluginInstance => pluginInstance.Loaded))
-            {
-                pluginInstance.Instance.Locale = locale;
-            }
+            return new TCPTable(tcpRows);
         }
+
+        #endregion
     }
 }

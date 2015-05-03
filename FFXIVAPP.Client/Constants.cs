@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using FFXIVAPP.Client.Helpers;
-using FFXIVAPP.Client.Models;
+using FFXIVAPP.Common.Core.Constant;
 
 namespace FFXIVAPP.Client
 {
@@ -42,7 +42,7 @@ namespace FFXIVAPP.Client
 
         public static readonly string[] Supported =
         {
-            "ja", "fr", "en", "de"
+            "ja", "fr", "en", "de", "zh"
         };
 
         public static StringComparison InvariantComparer = StringComparison.InvariantCultureIgnoreCase;
@@ -62,6 +62,7 @@ namespace FFXIVAPP.Client
         private static string _serverName;
         private static string _gameLanguage;
         private static bool _enableNLog;
+        private static bool _enableNetworkReading;
         private static bool _enableHelpLabels;
         private static string _theme;
         private static string _uiScale;
@@ -69,7 +70,11 @@ namespace FFXIVAPP.Client
         public static Dictionary<string, ActionInfo> Actions
         {
             get { return _actions ?? (_actions = new Dictionary<string, ActionInfo>()); }
-            set { _actions = value; }
+            set
+            {
+                _actions = value;
+                ConstantsHelper.UpdatePluginConstants();
+            }
         }
 
         public static Dictionary<string, string> AutoTranslate
@@ -153,6 +158,16 @@ namespace FFXIVAPP.Client
             set
             {
                 _enableNLog = value;
+                ConstantsHelper.UpdatePluginConstants();
+            }
+        }
+
+        public static bool EnableNetworkReading
+        {
+            get { return _enableNetworkReading; }
+            set
+            {
+                _enableNetworkReading = value;
                 ConstantsHelper.UpdatePluginConstants();
             }
         }

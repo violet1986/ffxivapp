@@ -127,6 +127,17 @@ namespace FFXIVAPP.Client.Memory
                             GetItems(InventoryPointerMap, Inventory.Container.EXTRA_EQ),
                             GetItems(InventoryPointerMap, Inventory.Container.CRYSTALS),
                             GetItems(InventoryPointerMap, Inventory.Container.QUESTS_KI),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_1),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_2),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_3),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_4),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_5),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_6),
+                            GetItems(InventoryPointerMap, Inventory.Container.HIRE_7),
+                            GetItems(InventoryPointerMap, Inventory.Container.COMPANY_1),
+                            GetItems(InventoryPointerMap, Inventory.Container.COMPANY_2),
+                            GetItems(InventoryPointerMap, Inventory.Container.COMPANY_3),
+                            GetItems(InventoryPointerMap, Inventory.Container.COMPANY_CRYSTALS),
                             GetItems(InventoryPointerMap, Inventory.Container.AC_MH),
                             GetItems(InventoryPointerMap, Inventory.Container.AC_OH),
                             GetItems(InventoryPointerMap, Inventory.Container.AC_HEAD),
@@ -158,6 +169,30 @@ namespace FFXIVAPP.Client.Memory
                                 LastInventoryEntities = inventoryEntities;
                                 notify = true;
                             }
+                            // Get Latest Character Name
+                            if (MemoryHandler.Instance.SigScanner.Locations.ContainsKey("CHARMAP"))
+                            {
+                                try
+                                {
+                                    var charMapAddress = MemoryHandler.Instance.SigScanner.Locations["CHARMAP"];
+                                    var characterAddressMap = MemoryHandler.Instance.GetByteArray(charMapAddress, 4);
+                                    var characterAddress = BitConverter.ToUInt32(characterAddressMap, 0);
+                                    var name = MemoryHandler.Instance.GetString(characterAddress, 48);
+                                    if (Settings.Default.CharacterName != name || String.IsNullOrWhiteSpace(Settings.Default.CharacterName))
+                                    {
+                                        Settings.Default.CharacterName = name;
+                                        notify = true;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Settings.Default.CharacterName = "";
+                                }
+                            }
+                            else
+                            {
+                                Settings.Default.CharacterName = "";
+                            }
                         }
                         if (notify)
                         {
@@ -186,8 +221,21 @@ namespace FFXIVAPP.Client.Memory
                 Items = new List<ItemInfo>(),
                 Type = type
             };
+            // The number of item is 50 in COMPANY's locker
+            int limit;
+            switch (type)
+            {
+                case Inventory.Container.COMPANY_1:
+                case Inventory.Container.COMPANY_2:
+                case Inventory.Container.COMPANY_3:
+                    limit = 3200;
+                    break;
+                default:
+                    limit = 1600;
+                    break;
+            }
 
-            for (var ci = 0; ci < 1600; ci += 64)
+            for (var ci = 0; ci < limit; ci += 64)
             {
                 var itemOffset = (uint) (containerAddress + ci);
                 var id = MemoryHandler.Instance.GetUInt32(itemOffset, 0x8);
@@ -200,7 +248,9 @@ namespace FFXIVAPP.Client.Memory
                         Amount = MemoryHandler.Instance.GetByte(itemOffset, 0xC),
                         SB = MemoryHandler.Instance.GetUInt16(itemOffset, 0x10),
                         Durability = MemoryHandler.Instance.GetUInt16(itemOffset, 0x12),
-                        GlamourID = MemoryHandler.Instance.GetUInt32(itemOffset, 0x30)
+                        GlamourID = MemoryHandler.Instance.GetUInt32(itemOffset, 0x30),
+                        //get the flag that show if the item is hq or not
+                        IsHQ = (MemoryHandler.Instance.GetByte(itemOffset, 0x14) == 0x01)
                     });
                 }
             }

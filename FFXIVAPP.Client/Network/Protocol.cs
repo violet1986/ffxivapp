@@ -1,5 +1,5 @@
 ﻿// FFXIVAPP.Client
-// PluginStatus.cs
+// Protocol.cs
 // 
 // Copyright © 2007 - 2015 Ryan Wilson - All Rights Reserved
 // 
@@ -27,13 +27,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
-namespace FFXIVAPP.Client.Models
+namespace FFXIVAPP.Client.Network
 {
-    public enum PluginStatus
+    public enum Protocol
     {
-        NotInstalled,
-        Installed,
-        UpdateAvailable,
-        OutOfDate
-    }
+        TCP = 6,
+        UDP = 17,
+        Unknown = -1
+    };
 }

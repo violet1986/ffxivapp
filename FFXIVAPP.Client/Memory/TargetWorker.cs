@@ -30,7 +30,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -121,7 +120,7 @@ namespace FFXIVAPP.Client.Memory
                                     targetHateStructure = MemoryHandler.Instance.SigScanner.Locations["CHARMAP"] + 1136;
                                     break;
                                 default:
-                                    targetHateStructure = MemoryHandler.Instance.SigScanner.Locations["CHARMAP"] - 120584;
+                                    targetHateStructure = MemoryHandler.Instance.SigScanner.Locations["CHARMAP"] - 120664;
                                     break;
                             }
                             var enmityEntries = new List<EnmityEntry>();
@@ -143,10 +142,10 @@ namespace FFXIVAPP.Client.Memory
                                     {
                                         case "Chinese":
                                             currentTarget = BitConverter.ToUInt32(targetInfoSource, 0x0);
-                                            mouseOverTarget = BitConverter.ToUInt32(targetInfoSource, 0x18);
-                                            focusTarget = BitConverter.ToUInt32(targetInfoSource, 0x48);
-                                            previousTarget = BitConverter.ToUInt32(targetInfoSource, 0x54);
-                                            currentTargetID = BitConverter.ToUInt32(targetInfoSource, 0x68);
+                                            mouseOverTarget = BitConverter.ToUInt32(targetInfoSource, 0xC);
+                                            focusTarget = BitConverter.ToUInt32(targetInfoSource, 0x3C);
+                                            previousTarget = BitConverter.ToUInt32(targetInfoSource, 0x48);
+                                            currentTargetID = BitConverter.ToUInt32(targetInfoSource, 0x5C);
                                             break;
                                         default:
                                             currentTarget = BitConverter.ToUInt32(targetInfoSource, 0x0);
@@ -275,42 +274,30 @@ namespace FFXIVAPP.Client.Memory
                                             continue;
                                         }
                                         if (PCWorkerDelegate.GetUniqueNPCEntities()
-                                                            .Any())
-                                        {
-                                            if (PCWorkerDelegate.GetUniqueNPCEntities()
                                                                 .Any(a => a.ID == enmityEntry.ID))
-                                            {
-                                                enmityEntry.Name = PCWorkerDelegate.GetUniqueNPCEntities()
-                                                                                   .First(a => a.ID == enmityEntry.ID)
-                                                                                   .Name;
-                                            }
+                                        {
+                                            enmityEntry.Name = PCWorkerDelegate.GetUniqueNPCEntities()
+                                                                               .First(a => a.ID == enmityEntry.ID)
+                                                                               .Name;
                                         }
                                         if (String.IsNullOrWhiteSpace(enmityEntry.Name))
                                         {
                                             if (NPCWorkerDelegate.GetUniqueNPCEntities()
-                                                                 .Any())
+                                                                     .Any(a => a.NPCID2 == enmityEntry.ID))
                                             {
-                                                if (NPCWorkerDelegate.GetUniqueNPCEntities()
-                                                                     .Any(a => a.ID == enmityEntry.ID))
-                                                {
-                                                    enmityEntry.Name = NPCWorkerDelegate.GetUniqueNPCEntities()
-                                                                                        .First(a => a.NPCID2 == enmityEntry.ID)
-                                                                                        .Name;
-                                                }
+                                                enmityEntry.Name = NPCWorkerDelegate.GetUniqueNPCEntities()
+                                                                                    .First(a => a.NPCID2 == enmityEntry.ID)
+                                                                                    .Name;
                                             }
                                         }
                                         if (String.IsNullOrWhiteSpace(enmityEntry.Name))
                                         {
                                             if (MonsterWorkerDelegate.GetUniqueNPCEntities()
-                                                                     .Any())
-                                            {
-                                                if (MonsterWorkerDelegate.GetUniqueNPCEntities()
                                                                          .Any(a => a.ID == enmityEntry.ID))
-                                                {
-                                                    enmityEntry.Name = MonsterWorkerDelegate.GetUniqueNPCEntities()
-                                                                                            .First(a => a.ID == enmityEntry.ID)
-                                                                                            .Name;
-                                                }
+                                            {
+                                                enmityEntry.Name = MonsterWorkerDelegate.GetUniqueNPCEntities()
+                                                                                        .First(a => a.ID == enmityEntry.ID)
+                                                                                        .Name;
                                             }
                                         }
                                         enmityEntries.Add(enmityEntry);

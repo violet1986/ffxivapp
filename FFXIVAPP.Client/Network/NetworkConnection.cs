@@ -1,5 +1,5 @@
 ﻿// FFXIVAPP.Client
-// PluginStatus.cs
+// NetworkConnection.cs
 // 
 // Copyright © 2007 - 2015 Ryan Wilson - All Rights Reserved
 // 
@@ -27,13 +27,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 // POSSIBILITY OF SUCH DAMAGE. 
 
-namespace FFXIVAPP.Client.Models
+using System;
+using System.Collections.Generic;
+
+namespace FFXIVAPP.Client.Network
 {
-    public enum PluginStatus
+    public class NetworkConnection : ServerConnection
     {
-        NotInstalled,
-        Installed,
-        UpdateAvailable,
-        OutOfDate
+        private const int NetworkBufferMax = 0x19000;
+        public DateTime LastGoodNetworkPacketTime = DateTime.MinValue;
+        public DateTime LastNetworkBufferUpdate = DateTime.Now;
+        public byte[] NetworkBuffer = new byte[0x19000];
+        public object NetworkBufferLock = new object();
+        public int NetworkBufferPosition;
+        public uint? NextTCPSequence;
+        public Dictionary<uint, NetworkPacket> StalePackets = new Dictionary<uint, NetworkPacket>();
+        public object StalePacketsLock = new object();
     }
 }

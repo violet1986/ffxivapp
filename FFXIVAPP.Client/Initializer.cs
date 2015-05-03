@@ -42,10 +42,12 @@ using System.Xml.Linq;
 using FFXIVAPP.Client.Helpers;
 using FFXIVAPP.Client.Memory;
 using FFXIVAPP.Client.Models;
+using FFXIVAPP.Client.Network;
 using FFXIVAPP.Client.Properties;
 using FFXIVAPP.Client.Utilities;
 using FFXIVAPP.Client.ViewModels;
 using FFXIVAPP.Client.Views;
+using FFXIVAPP.Common.Core.Constant;
 using FFXIVAPP.Common.Helpers;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -62,7 +64,6 @@ namespace FFXIVAPP.Client
 
         #region Declarations
 
-        private static ActionWorker _actionWorker;
         private static ActorWorker _actorWorker;
         private static ChatLogWorker _chatLogWorker;
         private static MonsterWorker _monsterWorker;
@@ -70,6 +71,7 @@ namespace FFXIVAPP.Client
         private static TargetWorker _targetWorker;
         private static PartyInfoWorker _partyInfoWorker;
         private static InventoryWorker _inventoryWorker;
+        private static NetworkWorker _networkWorker;
 
         #endregion
 
@@ -215,6 +217,14 @@ namespace FFXIVAPP.Client
             foreach (var device in App.AvailableAudioDevices)
             {
                 SettingsViewModel.Instance.AvailableAudioDevicesList.Add(device.Description);
+            }
+        }
+
+        public static void LoadAvailableNetworkDevices()
+        {
+            foreach (var networkInterface in App.AvailableNetworkInterfaces)
+            {
+                SettingsViewModel.Instance.AvailableNetworkInterfacesList.Add(networkInterface.Name);
             }
         }
 
@@ -394,6 +404,13 @@ namespace FFXIVAPP.Client
                                                 pluginDownload.Status = PluginStatus.UpdateAvailable;
                                                 AppViewModel.Instance.HasNewPluginUpdate = true;
                                             }
+                                            else
+                                            {
+                                                if (!found.Loaded)
+                                                {
+                                                    pluginDownload.Status = PluginStatus.OutOfDate;
+                                                }
+                                            }
                                         }
                                         DispatcherHelper.Invoke(() => UpdateViewModel.Instance.AvailablePlugins.Add(pluginDownload));
                                     }
@@ -457,14 +474,6 @@ namespace FFXIVAPP.Client
         {
             ShellView.View.ShellViewTC.SelectedIndex = 1;
             ShellView.View.PluginsTC.SelectedIndex = pluginIndex;
-        }
-
-        /// <summary>
-        /// </summary>
-        public static void SetCharacter()
-        {
-            var name = String.Format("{0} {1}", Settings.Default.FirstName, Settings.Default.LastName);
-            Settings.Default.CharacterName = StringHelper.TrimAndCleanSpaces(name);
         }
 
         /// <summary>
@@ -597,7 +606,6 @@ namespace FFXIVAPP.Client
             updateCheck.BeginInvoke(null, null);
         }
 
-
         /// <summary>
         /// </summary>
         public static void SetSignatures()
@@ -610,31 +618,31 @@ namespace FFXIVAPP.Client
                     {
                         Key = "GAMEMAIN",
                         Value = "47616D654D61696E000000",
-                        Offset = 1180
+                        Offset = 1248
                     });
                     AppViewModel.Instance.Signatures.Add(new Signature
                     {
                         Key = "CHARMAP",
-                        Value = "??FFFFFF000000??000000??DB0FC93FDB0F49416F1283????FFFFFF",
-                        Offset = 792
+                        Value = "00000000DB0FC93FDB0F49416F1283????FFFFFF000000??000000??DB0FC93FDB0F49416F1283????FFFFFF",
+                        Offset = 872
                     });
                     AppViewModel.Instance.Signatures.Add(new Signature
                     {
                         Key = "NPCMAP",
                         Value = "3E000000????????4000000001000000000000000001000000",
-                        Offset = 2732
+                        Offset = 2716
                     });
                     AppViewModel.Instance.Signatures.Add(new Signature
                     {
                         Key = "ACTORMAP",
                         Value = "3E000000????????4000000001000000000000000001000000",
-                        Offset = 1332
+                        Offset = 1316
                     });
                     AppViewModel.Instance.Signatures.Add(new Signature
                     {
                         Key = "PARTYMAP",
                         Value = "DB0F49416F1283??FFFFFFFF0000000000000000DB0FC93FDB0F49416F1283??00",
-                        Offset = 56
+                        Offset = 52
                     });
                     AppViewModel.Instance.Signatures.Add(new Signature
                     {
@@ -651,8 +659,14 @@ namespace FFXIVAPP.Client
                     AppViewModel.Instance.Signatures.Add(new Signature
                     {
                         Key = "TARGET",
-                        Value = "40??00000000000000000000000000000000000000000000000000000000????0000????000000000000DB0FC93FDB0F49416F1283??FFFFFFFF",
-                        Offset = 206
+                        Value = "DB0FC93FDB0F49416F1283????FFFFFFDB0FC940920A063F",
+                        Offset = 172
+                    });
+                    AppViewModel.Instance.Signatures.Add(new Signature
+                    {
+                        Key = "INVENTORY",
+                        Value = "DB0FC93FDB0F49416F1283??FFFFFFFF0000000000000000000000000000000000000000DB0FC93FDB0F49416F1283??FFFFFFFF",
+                        Offset = 56
                     });
                     break;
                 default:
@@ -794,8 +808,6 @@ namespace FFXIVAPP.Client
             MemoryHandler.Instance.SigScanner.LoadOffsets(AppViewModel.Instance.Signatures);
             _chatLogWorker = new ChatLogWorker();
             _chatLogWorker.StartScanning();
-            //_actionWorker = new ActionWorker();
-            //_actionWorker.StartScanning();
             _actorWorker = new ActorWorker();
             _actorWorker.StartScanning();
             _monsterWorker = new MonsterWorker();
@@ -823,11 +835,6 @@ namespace FFXIVAPP.Client
             {
                 _chatLogWorker.StopScanning();
                 _chatLogWorker.Dispose();
-            }
-            if (_actionWorker != null)
-            {
-                _actionWorker.StopScanning();
-                _actionWorker.Dispose();
             }
             if (_actorWorker != null)
             {
@@ -859,6 +866,31 @@ namespace FFXIVAPP.Client
                 _inventoryWorker.StopScanning();
                 _inventoryWorker.Dispose();
             }
+        }
+
+        public static void StartNetworkWorker()
+        {
+            RefreshNetworkWorker();
+        }
+
+        public static void StopNetworkWorker()
+        {
+            if (_networkWorker != null)
+            {
+                _networkWorker.StopScanning();
+                _networkWorker.Dispose();
+            }
+        }
+
+        public static void RefreshNetworkWorker()
+        {
+            if (_networkWorker != null)
+            {
+                _networkWorker.StopScanning();
+                _networkWorker.Dispose();
+            }
+            _networkWorker = new NetworkWorker();
+            _networkWorker.StartScanning();
         }
     }
 }
